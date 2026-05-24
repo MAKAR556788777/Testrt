@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RP Сервер | Панель</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:system-ui;background:linear-gradient(135deg,#0f0f1a,#1a1a2e);color:#fff;min-height:100vh;padding:20px;}
+        .container{max-width:1200px;margin:0 auto;}
+        .header{text-align:center;padding:20px;border-bottom:2px solid #e94560;margin-bottom:30px;}
+        .header h1{color:#e94560;font-size:32px;}
+        .online-badge{background:#44ff55;color:#000;padding:5px 15px;border-radius:20px;font-size:14px;margin-top:10px;display:inline-block;}
+        .auth-box{max-width:350px;margin:50px auto;background:rgba(255,255,255,0.05);border-radius:20px;padding:30px;}
+        .auth-box input{width:100%;padding:12px;margin-bottom:15px;border:1px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;}
+        .btn{width:100%;padding:12px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;}
+        .btn-primary{background:#e94560;color:#fff;}
+        .btn-secondary{background:rgba(255,255,255,0.1);color:#fff;margin-top:10px;}
+        .btn-success{background:#44ff55;color:#000;}
+        .switch{text-align:center;margin-top:15px;color:#aaa;cursor:pointer;}
+        .switch a{color:#e94560;}
+        .tabs{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center;}
+        .tab{background:rgba(255,255,255,0.1);border:none;padding:10px 20px;border-radius:30px;color:#fff;cursor:pointer;}
+        .tab.active{background:#e94560;}
+        .content{display:none;background:rgba(255,255,255,0.05);border-radius:20px;padding:20px;}
+        .content.active{display:block;}
+        .player-card{display:flex;justify-content:space-between;align-items:center;padding:12px;margin-bottom:10px;background:rgba(255,255,255,0.03);border-radius:10px;}
+        .online{color:#44ff55;font-weight:bold;}
+        .offline{color:#ff5555;}
+        .player-name{font-weight:bold;color:#ffaa44;}
+        .complaint-card{background:rgba(255,85,85,0.1);border-left:3px solid #ff5555;padding:15px;border-radius:10px;margin-bottom:15px;}
+        .admin-card{background:rgba(68,255,85,0.1);border-left:3px solid #44ff55;padding:15px;border-radius:10px;margin-bottom:15px;}
+        .post-card{background:rgba(255,255,255,0.03);border-radius:12px;padding:15px;margin-bottom:15px;}
+        textarea, input, select{width:100%;padding:12px;border-radius:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;margin-bottom:10px;font-family:inherit;}
+        .markdown-preview{background:rgba(255,255,255,0.03);padding:12px;border-radius:10px;margin-top:10px;}
+        .markdown-preview strong{color:#ffaa44;}
+        .markdown-preview em{color:#e94560;}
+        .markdown-preview code{background:#000;padding:2px 6px;border-radius:5px;font-family:monospace;}
+        .forum-meta{color:#888;font-size:11px;margin-top:8px;}
+        .stats{display:flex;gap:20px;justify-content:center;margin-top:20px;}
+        .stat{background:rgba(255,255,255,0.05);padding:15px;border-radius:12px;text-align:center;}
+        .stat .num{font-size:28px;color:#e94560;}
+        .toast{position:fixed;bottom:20px;right:20px;background:#44ff55;color:#000;padding:12px 20px;border-radius:10px;z-index:1000;animation:fadeIn 0.3s;}
+        .toast.error{background:#ff5555;color:#fff;}
+        @keyframes fadeIn{from{opacity:0;transform:translateX(100%);}to{opacity:1;transform:translateX(0);}}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎮 SERVER RP</h1>
+        <p id="onlineIndicator" class="online-badge">📡 Онлайн: 0</p>
+    </div>
+
+    <!-- Форма входа/регистрации -->
+    <div id="authBox" class="auth-box">
+        <h2 id="authTitle" style="text-align:center;">🔐 Вход</h2>
+        <div id="loginForm">
+            <input type="text" id="loginName" placeholder="Логин">
+            <input type="password" id="loginPass" placeholder="Пароль">
+            <button class="btn btn-primary" onclick="doLogin()">Войти</button>
+            <div class="switch">Нет аккаунта? <a onclick="showReg()">Регистрация</a></div>
+        </div>
+        <div id="regForm" style="display:none">
+            <input type="text" id="regName" placeholder="Логин">
+            <input type="email" id="regEmail" placeholder="Email">
+            <input type="password" id="regPass" placeholder="Пароль">
+            <input type="password" id="regPass2" placeholder="Повторите пароль">
+            <button class="btn btn-primary" onclick="doReg()">Зарегистрироваться</button>
+            <div class="switch">Уже есть аккаунт? <a onclick="showLogin()">Войти</a></div>
+        </div>
+    </div>
+
+    <!-- Главное меню -->
+    <div id="mainMenu" style="display:none">
+        <div class="tabs">
+            <button class="tab active" data-tab="players">👥 Игроки</button>
+            <button class="tab" data-tab="complaints">⚠️ Жалобы</button>
+            <button class="tab" data-tab="forum">💬 Форум</button>
+            <button class="tab" data-tab="adminReq">👑 Заявка в админы</button>
+            <button class="tab" data-tab="profile">👤 Профиль</button>
+        </div>
+
+        <!-- Список игроков -->
+        <div id="players" class="content active">
+            <h3>👥 Все игроки сервера</h3>
+            <div id="playersList"></div>
+        </div>
+
+        <!-- Жалобы -->
+        <div id="complaints" class="content">
+            <h3>⚠️ Создать жалобу</h3>
+            <select id="complaintType">
+                <option value="admin">Жалоба на администратора</option>
+                <option value="leader">Жалоба на лидера фракции</option>
+                <option value="player">Жалоба на игрока</option>
+            </select>
+            <input type="text" id="complaintTarget" placeholder="На кого жалоба (ник)">
+            <textarea id="complaintText" rows="4" placeholder="Опишите ситуацию..."></textarea>
+            <button class="btn btn-primary" onclick="sendComplaint()">📨 Отправить жалобу</button>
+            <h3 style="margin-top:20px;">📋 Все жалобы</h3>
+            <div id="complaintsList"></div>
+        </div>
+
+        <!-- Форум -->
+        <div id="forum" class="content">
+            <input type="text" id="forumTitle" placeholder="Заголовок">
+            <textarea id="forumText" rows="4" placeholder="Текст (можно использовать **жирный**, *курсив*, `код`)"></textarea>
+            <button class="btn btn-primary" onclick="createForumPost()">📤 Опубликовать</button>
+            <div id="forumPosts"></div>
+        </div>
+
+        <!-- Заявка на админа -->
+        <div id="adminReq" class="content">
+            <h3>👑 Заявка на должность администратора</h3>
+            <textarea id="adminReason" rows="6" placeholder="Почему вы хотите стать администратором? Опишите ваш опыт, возраст, сколько времени готовы уделять серверу..."></textarea>
+            <button class="btn btn-success" onclick="sendAdminRequest()">📝 Отправить заявку</button>
+            <div id="adminRequestsList" style="margin-top:20px;"></div>
+        </div>
+
+        <!-- Профиль -->
+        <div id="profile" class="content">
+            <div style="text-align:center;">
+                <h3 id="profileName"></h3>
+                <p id="profileRole"></p>
+                <div class="stats">
+                    <div class="stat"><div class="num" id="postCount">0</div><div>Постов</div></div>
+                    <div class="stat"><div class="num" id="complaintCount">0</div><div>Жалоб</div></div>
+                </div>
+                <button class="btn btn-secondary" onclick="logout()">🚪 Выйти</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== БАЗА ДАННЫХ (localStorage) ==========
+    let users = JSON.parse(localStorage.getItem('users') || '{}');
+    let posts = JSON.parse(localStorage.getItem('forumPosts') || '[]');
+    let adminRequests = JSON.parse(localStorage.getItem('adminRequests') || '[]');
+    let currentUser = localStorage.getItem('currentUser');
+    
+    // Обновление онлайн-статусов
+    function updateOnlineStatus() {
+        let onlineUsers = JSON.parse(localStorage.getItem('onlineUsers') || '[]');
+        document.getElementById('onlineIndicator').innerHTML = `📡 Онлайн: ${onlineUsers.length}`;
+        if(document.getElementById('playersList')) loadPlayersList();
+    }
+    
+    // Добавить/удалить онлайн
+    function setUserOnline(username, isOnline) {
+        let onlineUsers = JSON.parse(localStorage.getItem('onlineUsers') || '[]');
+        if(isOnline && !onlineUsers.includes(username)) onlineUsers.push(username);
+        if(!isOnline && onlineUsers.includes(username)) onlineUsers = onlineUsers.filter(u => u !== username);
+        localStorage.setItem('onlineUsers', JSON.stringify(onlineUsers));
+        updateOnlineStatus();
+    }
+    
+    // Загрузка списка игроков
+    function loadPlayersList() {
+        let onlineUsers = JSON.parse(localStorage.getItem('onlineUsers') || '[]');
+        let userList = Object.keys(users);
+        let html = '';
+        userList.forEach(username => {
+            let isOnline = onlineUsers.includes(username);
+            let status = isOnline ? '<span class="online">● Онлайн</span>' : '<span class="offline">○ Оффлайн</span>';
+            let role = users[username].role || 'Игрок';
+            html += `<div class="player-card"><span class="player-name">${escapeHtml(username)}</span><span>${status}</span><span>🎲 ${role}</span></div>`;
+        });
+        document.getElementById('playersList').innerHTML = html || '<p>Нет игроков</p>';
+    }
+    
+    // Загрузка форума
+    function loadForum() {
+        let normalPosts = posts.filter(p => !p.type || p.type === 'normal');
+        let html = '';
+        normalPosts.forEach(p => {
+            html += `<div class="post-card"><h4>📌 ${escapeHtml(p.title)}</h4><div class="markdown-preview">${formatMarkdown(p.content)}</div><div class="forum-meta">👤 ${escapeHtml(p.author)} • 🕐 ${p.date}</div></div>`;
+        });
+        document.getElementById('forumPosts').innerHTML = html || '<p>Нет постов</p>';
+    }
+    
+    // Загрузка жалоб
+    function loadComplaints() {
+        let complaints = posts.filter(p => p.type && p.type !== 'normal');
+        let html = '';
+        complaints.forEach(c => {
+            let typeLabel = {complaint_admin:'👑 Админ', complaint_leader:'⭐ Лидер', complaint_player:'👤 Игрок'}[c.type] || c.type;
+            html += `<div class="complaint-card"><strong>${typeLabel} на ${escapeHtml(c.title)}</strong><div class="markdown-preview">${formatMarkdown(c.content)}</div><div class="forum-meta">👤 ${escapeHtml(c.author)} • 🕐 ${c.date}</div></div>`;
+        });
+        document.getElementById('complaintsList').innerHTML = html || '<p>Нет жалоб</p>';
+    }
+    
+    // Загрузка заявок в админы
+    function loadAdminRequests() {
+        let html = '';
+        adminRequests.forEach(r => {
+            html += `<div class="admin-card"><strong>👑 Заявка от ${escapeHtml(r.username)}</strong><div class="markdown-preview">${formatMarkdown(r.reason)}</div><div class="forum-meta">Статус: ${r.status} • 🕐 ${r.date}</div></div>`;
+        });
+        document.getElementById('adminRequestsList').innerHTML = html || '<p>Нет заявок</p>';
+    }
+    
+    // Отправка жалобы
+    function sendComplaint() {
+        let type = document.getElementById('complaintType').value;
+        let target = document.getElementById('complaintTarget').value;
+        let text = document.getElementById('complaintText').value;
+        if(!target || !text) return toast('Заполните все поля!', true);
+        let typeMap = {admin:'complaint_admin', leader:'complaint_leader', player:'complaint_player'};
+        posts.unshift({
+            id: Date.now(),
+            title: target,
+            content: text,
+            author: currentUser,
+            type: typeMap[type],
+            date: new Date().toLocaleString()
+        });
+        localStorage.setItem('forumPosts', JSON.stringify(posts));
+        toast('Жалоба отправлена!');
+        document.getElementById('complaintTarget').value = '';
+        document.getElementById('complaintText').value = '';
+        loadComplaints();
+    }
+    
+    // Заявка на админа
+    function sendAdminRequest() {
+        let reason = document.getElementById('adminReason').value;
+        if(!reason) return toast('Напишите причину!', true);
+        adminRequests.unshift({
+            id: Date.now(),
+            username: currentUser,
+            reason: reason,
+            status: 'pending',
+            date: new Date().toLocaleString()
+        });
+        localStorage.setItem('adminRequests', JSON.stringify(adminRequests));
+        toast('Заявка отправлена администрации!');
+        document.getElementById('adminReason').value = '';
+        loadAdminRequests();
+    }
+    
+    // Пост на форуме
+    function createForumPost() {
+        let title = document.getElementById('forumTitle').value;
+        let text = document.getElementById('forumText').value;
+        if(!title || !text) return toast('Заполните заголовок и текст!', true);
+        posts.unshift({
+            id: Date.now(),
+            title: title,
+            content: text,
+            author: currentUser,
+            type: 'normal',
+            date: new Date().toLocaleString()
+        });
+        localStorage.setItem('forumPosts', JSON.stringify(posts));
+        toast('Пост опубликован!');
+        document.getElementById('forumTitle').value = '';
+        document.getElementById('forumText').value = '';
+        loadForum();
+    }
+    
+    // Markdown форматирование
+    function formatMarkdown(text) {
+        return text
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            .replace(/\n/g, '<br>');
+    }
+    
+    // Регистрация
+    function doReg() {
+        let name = document.getElementById('regName').value.trim();
+        let email = document.getElementById('regEmail').value.trim();
+        let pass = document.getElementById('regPass').value;
+        let pass2 = document.getElementById('regPass2').value;
+        if(!name || !email || !pass) return toast('Заполните все поля!', true);
+        if(pass !== pass2) return toast('Пароли не совпадают!', true);
+        if(users[name]) return toast('Пользователь уже существует!', true);
+        
+        users[name] = {
+            email: email,
+            password: pass,
+            role: 'Игрок',
+            registerDate: new Date().toLocaleString()
+        };
+        localStorage.setItem('users', JSON.stringify(users));
+        toast('Регистрация успешна! Войдите.');
+        showLogin();
+        document.getElementById('regName').value = '';
+        document.getElementById('regEmail').value = '';
+        document.getElementById('regPass').value = '';
+        document.getElementById('regPass2').value = '';
+    }
+    
+    // Вход
+    function doLogin() {
+        let name = document.getElementById('loginName').value.trim();
+        let pass = document.getElementById('loginPass').value;
+        if(!users[name] || users[name].password !== pass) return toast('Неверный логин или пароль!', true);
+        
+        currentUser = name;
+        localStorage.setItem('currentUser', currentUser);
+        setUserOnline(currentUser, true);
+        
+        document.getElementById('authBox').style.display = 'none';
+        document.getElementById('mainMenu').style.display = 'block';
+        
+        loadPlayersList();
+        loadForum();
+        loadComplaints();
+        loadAdminRequests();
+        
+        document.getElementById('profileName').innerText = currentUser;
+        document.getElementById('profileRole').innerText = users[currentUser].role;
+        
+        let myPosts = posts.filter(p => p.author === currentUser);
+        document.getElementById('postCount').innerText = myPosts.length;
+        document.getElementById('complaintCount').innerText = myPosts.filter(p => p.type && p.type !== 'normal').length;
+        
+        toast(`Добро пожаловать, ${name}!`);
+    }
+    
+    // Выход
+    function logout() {
+        setUserOnline(currentUser, false);
+        localStorage.removeItem('currentUser');
+        location.reload();
+    }
+    
+    function toast(msg, isError) {
+        let d = document.createElement('div');
+        d.className = 'toast' + (isError ? ' error' : '');
+        d.innerText = msg;
+        document.body.appendChild(d);
+        setTimeout(() => d.remove(), 2500);
+    }
+    
+    function escapeHtml(s) {
+        if(!s) return '';
+        return s.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // Переключение вкладок
+    document.querySelectorAll('.tab').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
+        };
+    });
+    
+    function showReg() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('regForm').style.display = 'block';
+        document.getElementById('authTitle').innerText = '📝 Регистрация';
+    }
+    
+    function showLogin() {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('regForm').style.display = 'none';
+        document.getElementById('authTitle').innerText = '🔐 Вход';
+    }
+    
+    // Проверка сессии при загрузке
+    if(currentUser && users[currentUser]) {
+        document.getElementById('authBox').style.display = 'none';
+        document.getElementById('mainMenu').style.display = 'block';
+        setUserOnline(currentUser, true);
+        loadPlayersList();
+        loadForum();
+        loadComplaints();
+        loadAdminRequests();
+        document.getElementById('profileName').innerText = currentUser;
+        document.getElementById('profileRole').innerText = users[currentUser].role;
+        let myPosts = posts.filter(p => p.author === currentUser);
+        document.getElementById('postCount').innerText = myPosts.length;
+        document.getElementById('complaintCount').innerText = myPosts.filter(p => p.type && p.type !== 'normal').length;
+    }
+    
+    // Обновление онлайн при закрытии вкладки
+    window.addEventListener('beforeunload', () => {
+        if(currentUser) setUserOnline(currentUser, false);
+    });
+    
+    updateOnlineStatus();
+</script>
+</body>
+</html>
